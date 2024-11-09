@@ -19,15 +19,15 @@ export default function ProductCard({
 }: ProductCardProps = {}) {
   return (
     <Card className="w-full max-w-sm overflow-hidden">
-      <div className="relative">
+      <div className="relative aspect-square">
         <Image
           src={imageUrl}
           alt={name || 'Product image'}
-          width={400}
-          height={300}
-          className="w-full h-[300px] object-cover"
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
-        <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
+        <Badge className="absolute top-2 right-2" variant="secondary">
           {category}
         </Badge>
       </div>
