@@ -1,19 +1,20 @@
 'use client'
 
-import { useFFE } from '@/components/FFEContext'
-import { Button } from '@/components/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import React from 'react'
+import { Button } from "@/components/ui/button"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Home, Library, Folder, File, Settings, PlusCircle, MoreVertical, Edit2 } from 'lucide-react'
-import Link from 'next/link'
+import { useRouter, usePathname } from 'next/navigation'
+import { useFFE } from '@/components/FFEContext'
 
 interface FFESidebarProps {
   isOpen: boolean
-  onViewChange: (view: 'dashboard' | 'projects') => void
-  currentView: 'dashboard' | 'projects'
+  currentView: string
+  onViewChange: (view: string) => void
 }
 
-export function FFESidebar({ isOpen, onViewChange, currentView }: FFESidebarProps) {
+export function FFESidebar({ isOpen, currentView, onViewChange }: FFESidebarProps) {
   const { 
     projects, 
     setProjects, 
@@ -22,6 +23,9 @@ export function FFESidebar({ isOpen, onViewChange, currentView }: FFESidebarProp
     currentScheduleId, 
     setCurrentScheduleId 
   } = useFFE()
+
+  const router = useRouter()
+  const pathname = usePathname()
 
   const renameProject = (projectId: string) => {
     const project = projects.find(p => p.id === projectId)
@@ -65,6 +69,16 @@ export function FFESidebar({ isOpen, onViewChange, currentView }: FFESidebarProp
     setProjects(updatedProjects)
   }
 
+  const navigateTo = (path: string) => {
+    router.push(path)
+  }
+
+  const handleProjectClick = (projectId: string, scheduleId: string) => {
+    setCurrentProjectId(projectId)
+    setCurrentScheduleId(scheduleId)
+    router.push(`/projects/${projectId}`)
+  }
+
   return (
     <aside className={`bg-muted w-64 p-4 flex flex-col fixed h-screen transition-all duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="flex items-center mb-6">
@@ -75,29 +89,28 @@ export function FFESidebar({ isOpen, onViewChange, currentView }: FFESidebarProp
       <nav className="flex-grow overflow-y-auto">
         <div className="space-y-2">
           <Button 
-            variant={currentView === 'dashboard' ? 'default' : 'ghost'} 
+            variant={pathname === '/' ? 'default' : 'ghost'} 
             className="w-full justify-start"
-            onClick={() => onViewChange('dashboard')}
+            onClick={() => navigateTo('/')}
           >
             <Home className="mr-2 h-4 w-4" />
             Dashboard
           </Button>
           
-          <Link href="/products" className="block">
-            <Button variant="ghost" className="w-full justify-start">
-              <Library className="mr-2 h-4 w-4" />
-              Products & Materials
-            </Button>
-          </Link>
+          <Button 
+            variant={pathname === '/products' ? 'default' : 'ghost'} 
+            className="w-full justify-start"
+            onClick={() => navigateTo('/products')}
+          >
+            <Library className="mr-2 h-4 w-4" />
+            Products & Materials
+          </Button>
 
           {projects.map(project => (
             <Collapsible key={project.id}>
               <div className="flex items-center justify-between w-full p-2 hover:bg-accent rounded-lg">
                 <CollapsibleTrigger asChild>
-                  <div 
-                    className="flex items-center flex-grow cursor-pointer"
-                    onClick={() => onViewChange('projects')}
-                  >
+                  <div className="flex items-center flex-grow cursor-pointer">
                     <Folder className="mr-2 h-4 w-4" />
                     <span>{project.name}</span>
                   </div>
@@ -123,11 +136,7 @@ export function FFESidebar({ isOpen, onViewChange, currentView }: FFESidebarProp
                 {project.schedules.map(schedule => (
                   <div
                     key={schedule.id}
-                    onClick={() => {
-                      setCurrentProjectId(project.id)
-                      setCurrentScheduleId(schedule.id)
-                      onViewChange('projects')
-                    }}
+                    onClick={() => handleProjectClick(project.id, schedule.id)}
                     className="flex items-center w-full p-2 hover:bg-accent rounded-lg cursor-pointer"
                   >
                     <File className="mr-2 h-4 w-4" />
