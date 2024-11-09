@@ -3,12 +3,12 @@
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, Search, Edit, Menu, Grid, List } from 'lucide-react'
+import { Plus, Search, Menu, Grid, List } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import Image from 'next/image'
+import ProductCard from './ProductCard'
+import ProductListItem from './ProductListItem'
 
 interface ProductLibraryProps {
   isSidebarOpen: boolean
@@ -24,21 +24,107 @@ export default function ProductLibrary({ isSidebarOpen, onToggleSidebar }: Produ
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [categories] = useState(['Seating', 'Lighting', 'Tables', 'Storage'])
 
-  const addCategory = () => {
-    // Implementation for adding category
-  }
+  // Sample products data
+  const sampleProducts = [
+    {
+      id: '1',
+      imageUrl: 'https://images.unsplash.com/photo-1592078615290-033ee584e267?q=80&w=1964&auto=format&fit=crop',
+      category: 'Seating',
+      name: 'Modern Lounge Chair',
+      brand: 'ComfortPlus',
+      price: 599.99
+    },
+    {
+      id: '2',
+      imageUrl: 'https://images.unsplash.com/photo-1530603907829-659dc1b3f567?q=80&w=1964&auto=format&fit=crop',
+      category: 'Lighting',
+      name: 'Pendant Light',
+      brand: 'BrightLife',
+      price: 299.99
+    },
+    {
+      id: '3',
+      imageUrl: 'https://images.unsplash.com/photo-1577140917170-285929fb55b7?q=80&w=1964&auto=format&fit=crop',
+      category: 'Tables',
+      name: 'Coffee Table',
+      brand: 'ErgoDesk',
+      price: 449.99
+    }
+  ]
 
-  const addProduct = () => {
-    // Implementation for adding product
-  }
+  // Recently added products
+  const recentProducts = [
+    {
+      id: '4',
+      imageUrl: 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=1964&auto=format&fit=crop',
+      category: 'Storage',
+      name: 'Modern Shelf Unit',
+      brand: 'StoragePro',
+      price: 799.99
+    },
+    {
+      id: '5',
+      imageUrl: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1964&auto=format&fit=crop',
+      category: 'Seating',
+      name: 'Dining Chair',
+      brand: 'ComfortPlus',
+      price: 249.99
+    }
+  ]
 
-  const editProduct = () => {
-    // Implementation for editing product
-  }
+  // Most used products
+  const mostUsedProducts = [
+    {
+      id: '6',
+      imageUrl: 'https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=1964&auto=format&fit=crop',
+      category: 'Tables',
+      name: 'Office Desk',
+      brand: 'ErgoDesk',
+      price: 899.99
+    },
+    {
+      id: '7',
+      imageUrl: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=1964&auto=format&fit=crop',
+      category: 'Lighting',
+      name: 'Floor Lamp',
+      brand: 'BrightLife',
+      price: 199.99
+    }
+  ]
 
-  const filteredProducts = []
-  const recentlyAdded = []
-  const mostUsed = []
+  const renderProducts = (products: typeof sampleProducts) => {
+    if (viewMode === 'grid') {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              imageUrl={product.imageUrl}
+              category={product.category}
+              name={product.name}
+              brand={product.brand}
+              price={product.price}
+            />
+          ))}
+        </div>
+      )
+    }
+
+    return (
+      <div className="space-y-4">
+        {products.map((product) => (
+          <ProductListItem
+            key={product.id}
+            imageUrl={product.imageUrl}
+            category={product.category}
+            name={product.name}
+            brand={product.brand}
+            price={product.price}
+          />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -96,19 +182,7 @@ export default function ProductLibrary({ isSidebarOpen, onToggleSidebar }: Produ
             </Button>
             <Dialog>
               <DialogTrigger asChild>
-                <Button onClick={addCategory}>
-                  <Plus className="mr-2 h-4 w-4" /> Add Category
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Category</DialogTitle>
-                </DialogHeader>
-              </DialogContent>
-            </Dialog>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button onClick={addProduct}>
+                <Button>
                   <Plus className="mr-2 h-4 w-4" /> Add Product
                 </Button>
               </DialogTrigger>
@@ -169,69 +243,15 @@ export default function ProductLibrary({ isSidebarOpen, onToggleSidebar }: Produ
           </TabsList>
 
           <TabsContent value="all">
-            <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'} gap-6`}>
-              {filteredProducts.map((product) => (
-                <Card key={product.id}>
-                  <CardContent className="p-4">
-                    <div className="aspect-square relative mb-4">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover rounded-lg"
-                      />
-                    </div>
-                    <h3 className="font-semibold">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground">{product.category}</p>
-                    <p className="text-sm">${product.price}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {renderProducts(sampleProducts)}
           </TabsContent>
 
           <TabsContent value="recent">
-            <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'} gap-6`}>
-              {recentlyAdded.map((product) => (
-                <Card key={product.id}>
-                  <CardContent className="p-4">
-                    <div className="aspect-square relative mb-4">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover rounded-lg"
-                      />
-                    </div>
-                    <h3 className="font-semibold">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground">{product.category}</p>
-                    <p className="text-sm">${product.price}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {renderProducts(recentProducts)}
           </TabsContent>
 
           <TabsContent value="most-used">
-            <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'} gap-6`}>
-              {mostUsed.map((product) => (
-                <Card key={product.id}>
-                  <CardContent className="p-4">
-                    <div className="aspect-square relative mb-4">
-                      <Image
-                        src={product.image}
-                        alt={product.name}
-                        fill
-                        className="object-cover rounded-lg"
-                      />
-                    </div>
-                    <h3 className="font-semibold">{product.name}</h3>
-                    <p className="text-sm text-muted-foreground">{product.category}</p>
-                    <p className="text-sm">${product.price}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {renderProducts(mostUsedProducts)}
           </TabsContent>
         </Tabs>
       </main>

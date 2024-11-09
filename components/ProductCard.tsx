@@ -1,75 +1,42 @@
-'use client'
-
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Edit, Trash } from 'lucide-react'
 import Image from 'next/image'
-
-export interface Product {
-  id: string
-  name: string
-  category: string
-  brand: string
-  price: number
-  image: string
-  description: string
-  specifications: {
-    material: string
-    dimensions: string
-    weight: string
-  }
-  stock: number
-  dateAdded: string
-}
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 interface ProductCardProps {
-  product: Product
-  onEdit: (product: Product) => void
+  imageUrl?: string
+  category?: string
+  name?: string
+  brand?: string
+  price?: number
 }
 
-export function ProductCard({ product, onEdit }: ProductCardProps) {
+export default function ProductCard({
+  imageUrl = '/placeholder.svg',
+  category = 'Furniture',
+  name = 'Modern Chair',
+  brand = 'Acme',
+  price
+}: ProductCardProps = {}) {
   return (
-    <Card className="overflow-hidden">
-      <div className="relative h-48">
+    <Card className="w-full max-w-sm overflow-hidden">
+      <div className="relative">
         <Image
-          src={product.image}
-          alt={product.name}
-          fill
-          className="object-cover"
+          src={imageUrl}
+          alt={name || 'Product image'}
+          width={400}
+          height={300}
+          className="w-full h-[300px] object-cover"
         />
+        <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground">
+          {category}
+        </Badge>
       </div>
-      <CardHeader className="p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-semibold text-lg">{product.name}</h3>
-            <p className="text-sm text-muted-foreground">{product.brand}</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" size="icon" onClick={() => onEdit(product)}>
-              <Edit className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon">
-              <Trash className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium">{product.category}</span>
-          <span className="font-semibold">${product.price.toLocaleString()}</span>
-        </div>
-        <div className="mt-2">
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {product.description}
-          </p>
-        </div>
-        <div className="mt-2 text-sm">
-          <p>Stock: {product.stock} units</p>
-          <p className="text-muted-foreground">
-            Added: {new Date(product.dateAdded).toLocaleDateString()}
-          </p>
-        </div>
+      <CardContent className="p-4">
+        <h3 className="text-lg font-semibold">{name}</h3>
+        <p className="text-sm text-muted-foreground">{brand}</p>
+        <p className="mt-2 text-xl font-bold">
+          {price != null ? `$${price.toFixed(2)}` : 'Price not available'}
+        </p>
       </CardContent>
     </Card>
   )
