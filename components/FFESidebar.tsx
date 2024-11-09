@@ -9,9 +9,11 @@ import Link from 'next/link'
 
 interface FFESidebarProps {
   isOpen: boolean
+  onViewChange: (view: 'dashboard' | 'projects') => void
+  currentView: 'dashboard' | 'projects'
 }
 
-export function FFESidebar({ isOpen }: FFESidebarProps) {
+export function FFESidebar({ isOpen, onViewChange, currentView }: FFESidebarProps) {
   const { 
     projects, 
     setProjects, 
@@ -72,12 +74,14 @@ export function FFESidebar({ isOpen }: FFESidebarProps) {
 
       <nav className="flex-grow overflow-y-auto">
         <div className="space-y-2">
-          <Link href="/dashboard" className="block">
-            <Button variant="ghost" className="w-full justify-start">
-              <Home className="mr-2 h-4 w-4" />
-              Dashboard
-            </Button>
-          </Link>
+          <Button 
+            variant={currentView === 'dashboard' ? 'default' : 'ghost'} 
+            className="w-full justify-start"
+            onClick={() => onViewChange('dashboard')}
+          >
+            <Home className="mr-2 h-4 w-4" />
+            Dashboard
+          </Button>
           
           <Link href="/products" className="block">
             <Button variant="ghost" className="w-full justify-start">
@@ -90,7 +94,10 @@ export function FFESidebar({ isOpen }: FFESidebarProps) {
             <Collapsible key={project.id}>
               <div className="flex items-center justify-between w-full p-2 hover:bg-accent rounded-lg">
                 <CollapsibleTrigger asChild>
-                  <div className="flex items-center flex-grow cursor-pointer">
+                  <div 
+                    className="flex items-center flex-grow cursor-pointer"
+                    onClick={() => onViewChange('projects')}
+                  >
                     <Folder className="mr-2 h-4 w-4" />
                     <span>{project.name}</span>
                   </div>
@@ -119,6 +126,7 @@ export function FFESidebar({ isOpen }: FFESidebarProps) {
                     onClick={() => {
                       setCurrentProjectId(project.id)
                       setCurrentScheduleId(schedule.id)
+                      onViewChange('projects')
                     }}
                     className="flex items-center w-full p-2 hover:bg-accent rounded-lg cursor-pointer"
                   >
