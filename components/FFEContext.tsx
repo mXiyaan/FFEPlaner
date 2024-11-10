@@ -1,57 +1,121 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode } from 'react'
-import { Project } from '@/types/ffe'
+import { Project, Schedule } from '@/types/ffe'
 
 interface FFEContextType {
   projects: Project[]
   setProjects: (projects: Project[]) => void
-  currentProjectId: string
-  setCurrentProjectId: (id: string) => void
-  currentScheduleId: string
-  setCurrentScheduleId: (id: string) => void
+  currentProjectId: string | null
+  setCurrentProjectId: (id: string | null) => void
+  currentScheduleId: string | null
+  setCurrentScheduleId: (id: string | null) => void
+  addSchedule: (projectId: string, name: string, budget?: number) => void
+  updateSchedule: (projectId: string, scheduleId: string, name: string, budget?: number) => void
+  deleteSchedule: (projectId: string, scheduleId: string) => void
+  addProject: (project: Pick<Project, 'name' | 'totalBudget' | 'clientName'>) => string
+  updateProject: (projectId: string, project: Partial<Project>) => void
+  deleteProject: (projectId: string) => void
 }
 
 const FFEContext = createContext<FFEContextType | undefined>(undefined)
 
 export function FFEProvider({ children }: { children: ReactNode }) {
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: 'project1',
-      name: 'Harmony Heights Wellness Center',
-      totalBudget: 100000,
-      schedules: [
-        {
-          id: 'schedule1',
-          name: 'Interior Fixtures & Fittings',
-          budget: 50000,
-          items: [
-            {
-              id: 'CH01',
-              category: 'Seating',
-              name: 'Chair',
-              product: 'Panton',
-              productCode: 'SEA001',
-              brand: 'Virta',
-              dimensions: '500W x 860H x 610D',
-              material: 'Polypropylene',
-              finish: 'Matte',
-              quantity: 2,
-              leadTime: '10-12 wks',
-              supplier: 'KATE STOKES',
-              status: 'Pending',
-              image: 'https://images.unsplash.com/photo-1503602642458-232111445657',
-              price: 450,
-              alternatives: []
-            }
-          ]
-        }
-      ]
-    }
-  ])
+  const [projects, setProjects] = useState<Project[]>([])
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
+  const [currentScheduleId, setCurrentScheduleId] = useState<string | null>(null)
 
-  const [currentProjectId, setCurrentProjectId] = useState(projects[0].id)
-  const [currentScheduleId, setCurrentScheduleId] = useState(projects[0].schedules[0].id)
+  const addProject = (projectData: Pick<Project, 'name' | 'totalBudget' | 'clientName'>) => {
+    const newProject: Project = {
+      id: `project${projects.length + 1}`,
+      name: projectData.name,
+      clientName: projectData.clientName,
+      totalBudget: projectData.totalBudget,
+      schedules: []
+    }
+    setProjects(prev => [...prev, newProject])
+    setCurrentProjectId(newProject.id)
+    return newProject.id
+  }
+
+  const updateProject = (projectId: string, projectData: Partial<Project>) => {
+    setProjects(prevProjects => {
+      return prevProjects.map(project => {
+        if (project.id === projectId) {
+          return { ...project, ...projectData }
+        }
+        return project
+      })
+    })
+  }
+
+  const deleteProject = (projectId: string) => {
+    setProjects(prevProjects => prevProjects.filter(project => project.id !== projectId))
+    if (currentProjectId === projectId) {
+      setCurrentProjectId(null)
+      setCurrentScheduleId(null)
+    }
+  }
+
+  const addSchedule = (projectId: string, name: string, budget?: number) => {
+    setProjects(prevProjects => {
+      return prevProjects.map(project => {
+        if (project.id === projectId) {
+          const newSchedule = {
+            id: `schedule${project.schedules.length + 1}`,
+            name,
+            budget: budget || 0,
+            items: []
+          }
+          return {
+            ...project,
+            schedules: [...project.schedules, newSchedule]
+          }
+        }
+        return project
+      })
+    })
+  }
+
+  const updateSchedule = (projectId: string, scheduleId: string, name: string, budget?: number) => {
+    setProjects(prevProjects => {
+      return prevProjects.map(project => {
+        if (project.id === projectId) {
+          return {
+            ...project,
+            schedules: project.schedules.map(schedule => {
+              if (schedule.id === scheduleId) {
+                return {
+                  ...schedule,
+                  name,
+                  budget: budget || schedule.budget
+                }
+              }
+              return schedule
+            })
+          }
+        }
+        return project
+      })
+    })
+  }
+
+  const deleteSchedule = (projectId: string, scheduleId: string) => {
+    setProjects(prevProjects => {
+      return prevProjects.map(project => {
+        if (project.id === projectId) {
+          return {
+            ...project,
+            schedules: project.schedules.filter(schedule => schedule.id !== scheduleId)
+          }
+        }
+        return project
+      })
+    })
+    if (currentScheduleId === scheduleId) {
+      setCurrentScheduleId(null)
+    }
+  }
 
   return (
     <FFEContext.Provider
@@ -61,7 +125,13 @@ export function FFEProvider({ children }: { children: ReactNode }) {
         currentProjectId,
         setCurrentProjectId,
         currentScheduleId,
-        setCurrentScheduleId
+        setCurrentScheduleId,
+        addSchedule,
+        updateSchedule,
+        deleteSchedule,
+        addProject,
+        updateProject,
+        deleteProject
       }}
     >
       {children}

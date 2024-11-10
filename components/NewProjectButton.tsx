@@ -10,10 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Project } from '@/types/ffe'
+import { useRouter } from 'next/navigation'
+import { useFFE } from './FFEContext'
 
 type NewProjectButtonProps = {
-  onAddProject: (project: Pick<Project, 'name' | 'totalBudget' | 'clientName'>) => void
   existingClients?: string[]
   userSettings?: {
     defaultCurrency?: string
@@ -24,10 +24,11 @@ type NewProjectButtonProps = {
 const currencies = ['USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'INR']
 
 export default function NewProjectButton({ 
-  onAddProject, 
   existingClients = [], 
   userSettings = {} 
 }: NewProjectButtonProps) {
+  const router = useRouter()
+  const { addProject } = useFFE()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [projectName, setProjectName] = useState('')
   const [clientName, setClientName] = useState('')
@@ -65,12 +66,13 @@ export default function NewProjectButton({
 
   const handleAddProject = () => {
     if (projectName.trim()) {
-      onAddProject({
+      const projectId = addProject({
         name: projectName.trim(),
         clientName: clientName === 'new' ? newClientName.trim() : clientName,
         totalBudget: budgetType === 'fixed' && budget ? parseFloat(budget) : 0
       })
       handleCloseDialog()
+      router.push(`/projects/${projectId}`)
     }
   }
 
