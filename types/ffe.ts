@@ -30,6 +30,7 @@ export type Schedule = {
 export type Project = {
   id: string
   name: string
+  clientName?: string
   schedules: Schedule[]
   totalBudget: number
 }

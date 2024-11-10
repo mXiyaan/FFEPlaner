@@ -23,9 +23,10 @@ export function FFEHeader({ isSidebarOpen, onToggleSidebar }: FFEHeaderProps) {
           <Menu className="h-6 w-6" />
         </Button>
         <div className="text-right">
-          <h1 className="text-2xl font-bold">Innovate Interiors</h1>
+          <h1 className="text-2xl font-bold">{currentProject?.name || 'Select a Project'}</h1>
           <p className="text-sm text-muted-foreground">
-            {currentProject?.name} / {currentSchedule?.name}
+            {currentProject?.clientName && `${currentProject.clientName} / `}
+            {currentSchedule?.name || 'Select a Schedule'}
           </p>
         </div>
       </div>
