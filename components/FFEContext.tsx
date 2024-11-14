@@ -1,7 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode } from 'react'
-import { Project, Schedule, Category } from '@/types/ffe'
+import { Project, Schedule, Category, FFEItem } from '@/types/ffe'
+import { Product } from '@/types/product'
 
 interface FFEContextType {
   projects: Project[]
@@ -18,6 +19,9 @@ interface FFEContextType {
   deleteProject: (projectId: string) => void
   addCategory: (projectId: string, name: string, prefix: string) => void
   getCategories: (projectId: string) => Category[]
+  addFFEItem: (projectId: string, scheduleId: string, categoryId: string, product: Product, quantity: number) => void
+  updateFFEItem: (projectId: string, scheduleId: string, itemId: string, updates: Partial<FFEItem>) => void
+  deleteFFEItem: (projectId: string, scheduleId: string, itemId: string) => void
 }
 
 const FFEContext = createContext<FFEContextType | undefined>(undefined)
@@ -149,6 +153,96 @@ export function FFEProvider({ children }: { children: ReactNode }) {
     return project?.categories || []
   }
 
+  const addFFEItem = (projectId: string, scheduleId: string, categoryId: string, product: Product, quantity: number) => {
+    setProjects(prevProjects => {
+      return prevProjects.map(project => {
+        if (project.id === projectId) {
+          return {
+            ...project,
+            schedules: project.schedules.map(schedule => {
+              if (schedule.id === scheduleId) {
+                const category = project.categories.find(c => c.id === categoryId)
+                const newItem: FFEItem = {
+                  id: generateId(),
+                  category: category?.name || '',
+                  name: product.name,
+                  product: product.name,
+                  productCode: generateId().substring(0, 6),
+                  brand: product.brand,
+                  dimensions: product.specifications.dimensions,
+                  material: product.specifications.material,
+                  finish: '',
+                  quantity,
+                  leadTime: '4-6 weeks',
+                  supplier: product.brand,
+                  status: 'Pending',
+                  image: product.image,
+                  price: product.price,
+                  alternatives: []
+                }
+                return {
+                  ...schedule,
+                  items: [...schedule.items, newItem]
+                }
+              }
+              return schedule
+            })
+          }
+        }
+        return project
+      })
+    })
+  }
+
+  const updateFFEItem = (projectId: string, scheduleId: string, itemId: string, updates: Partial<FFEItem>) => {
+    setProjects(prevProjects => {
+      return prevProjects.map(project => {
+        if (project.id === projectId) {
+          return {
+            ...project,
+            schedules: project.schedules.map(schedule => {
+              if (schedule.id === scheduleId) {
+                return {
+                  ...schedule,
+                  items: schedule.items.map(item => {
+                    if (item.id === itemId) {
+                      return { ...item, ...updates }
+                    }
+                    return item
+                  })
+                }
+              }
+              return schedule
+            })
+          }
+        }
+        return project
+      })
+    })
+  }
+
+  const deleteFFEItem = (projectId: string, scheduleId: string, itemId: string) => {
+    setProjects(prevProjects => {
+      return prevProjects.map(project => {
+        if (project.id === projectId) {
+          return {
+            ...project,
+            schedules: project.schedules.map(schedule => {
+              if (schedule.id === scheduleId) {
+                return {
+                  ...schedule,
+                  items: schedule.items.filter(item => item.id !== itemId)
+                }
+              }
+              return schedule
+            })
+          }
+        }
+        return project
+      })
+    })
+  }
+
   return (
     <FFEContext.Provider
       value={{
@@ -165,7 +259,10 @@ export function FFEProvider({ children }: { children: ReactNode }) {
         updateProject,
         deleteProject,
         addCategory,
-        getCategories
+        getCategories,
+        addFFEItem,
+        updateFFEItem,
+        deleteFFEItem
       }}
     >
       {children}
