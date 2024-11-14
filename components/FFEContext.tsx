@@ -4,6 +4,25 @@ import { createContext, useContext, useState, ReactNode } from 'react'
 import { Project, Schedule, Category, FFEItem } from '@/types/ffe'
 import { Product } from '@/types/product'
 
+export type PDFTheme = 'modern' | 'classic' | 'minimal'
+
+export type PDFColumnVisibility = {
+  image: boolean
+  productCode: boolean
+  name: boolean
+  product: boolean
+  brand: boolean
+  dimensions: boolean
+  material: boolean
+  finish: boolean
+  quantity: boolean
+  unitPrice: boolean
+  totalPrice: boolean
+  leadTime: boolean
+  supplier: boolean
+  status: boolean
+}
+
 interface FFEContextType {
   projects: Project[]
   setProjects: (projects: Project[]) => void
@@ -22,6 +41,27 @@ interface FFEContextType {
   addFFEItem: (projectId: string, scheduleId: string, categoryId: string, product: Product, quantity: number) => void
   updateFFEItem: (projectId: string, scheduleId: string, itemId: string, updates: Partial<FFEItem>) => void
   deleteFFEItem: (projectId: string, scheduleId: string, itemId: string) => void
+  pdfTheme: PDFTheme
+  setPDFTheme: (theme: PDFTheme) => void
+  pdfColumnVisibility: PDFColumnVisibility
+  setPDFColumnVisibility: (visibility: PDFColumnVisibility) => void
+}
+
+const defaultColumnVisibility: PDFColumnVisibility = {
+  image: true,
+  productCode: true,
+  name: true,
+  product: true,
+  brand: true,
+  dimensions: true,
+  material: true,
+  finish: true,
+  quantity: true,
+  unitPrice: true,
+  totalPrice: true,
+  leadTime: true,
+  supplier: true,
+  status: true
 }
 
 const FFEContext = createContext<FFEContextType | undefined>(undefined)
@@ -30,6 +70,8 @@ export function FFEProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([])
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
   const [currentScheduleId, setCurrentScheduleId] = useState<string | null>(null)
+  const [pdfTheme, setPDFTheme] = useState<PDFTheme>('modern')
+  const [pdfColumnVisibility, setPDFColumnVisibility] = useState<PDFColumnVisibility>(defaultColumnVisibility)
 
   const generateId = () => Math.random().toString(36).substr(2, 9)
 
@@ -154,6 +196,25 @@ export function FFEProvider({ children }: { children: ReactNode }) {
   }
 
   const addFFEItem = (projectId: string, scheduleId: string, categoryId: string, product: Product, quantity: number) => {
+    const newItem: FFEItem = {
+      id: generateId(),
+      category: product.category,
+      name: product.name,
+      product: product.name,
+      productCode: generateId().substring(0, 6).toUpperCase(),
+      brand: product.brand,
+      dimensions: product.specifications.dimensions,
+      material: product.specifications.material,
+      finish: '',
+      quantity,
+      leadTime: '4-6 weeks',
+      supplier: '',
+      status: 'Pending',
+      image: product.image,
+      price: product.price,
+      alternatives: []
+    }
+
     setProjects(prevProjects => {
       return prevProjects.map(project => {
         if (project.id === projectId) {
@@ -161,25 +222,6 @@ export function FFEProvider({ children }: { children: ReactNode }) {
             ...project,
             schedules: project.schedules.map(schedule => {
               if (schedule.id === scheduleId) {
-                const category = project.categories.find(c => c.id === categoryId)
-                const newItem: FFEItem = {
-                  id: generateId(),
-                  category: category?.name || '',
-                  name: product.name,
-                  product: product.name,
-                  productCode: generateId().substring(0, 6),
-                  brand: product.brand,
-                  dimensions: product.specifications.dimensions,
-                  material: product.specifications.material,
-                  finish: '',
-                  quantity,
-                  leadTime: '4-6 weeks',
-                  supplier: product.brand,
-                  status: 'Pending',
-                  image: product.image,
-                  price: product.price,
-                  alternatives: []
-                }
                 return {
                   ...schedule,
                   items: [...schedule.items, newItem]
@@ -262,7 +304,11 @@ export function FFEProvider({ children }: { children: ReactNode }) {
         getCategories,
         addFFEItem,
         updateFFEItem,
-        deleteFFEItem
+        deleteFFEItem,
+        pdfTheme,
+        setPDFTheme,
+        pdfColumnVisibility,
+        setPDFColumnVisibility
       }}
     >
       {children}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { FFESidebar } from '@/components/FFESidebar'
-import { FFEHeader } from '@/components/FFEHeader'
+import FFEHeader from '@/components/FFEHeader'
 import { FFEDashboard } from '@/components/FFEDashboard'
 import { useFFE } from '@/components/FFEContext'
 import AddScheduleDialog from '@/components/AddScheduleDialog'
