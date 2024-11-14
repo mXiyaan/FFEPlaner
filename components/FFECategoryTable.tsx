@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, MoreVertical, Trash, CheckCircle, Clock } from 'lucide-react'
+import { useFFE } from './FFEContext'
 
 interface FFECategoryTableProps {
   items: FFEItem[]
@@ -14,6 +15,10 @@ interface FFECategoryTableProps {
 }
 
 export function FFECategoryTable({ items, category, isEditable, viewMode }: FFECategoryTableProps) {
+  const { currentProjectId, getCategories } = useFFE()
+  const categories = currentProjectId ? getCategories(currentProjectId) : []
+  const currentCategory = categories.find(cat => cat.name === category)
+
   const handleAddItem = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -41,6 +46,11 @@ export function FFECategoryTable({ items, category, isEditable, viewMode }: FFEC
             <h3 className="font-semibold">{item.name}</h3>
             <p className="text-sm text-muted-foreground">{item.product}</p>
             <p className="text-sm">${item.price.toLocaleString()}</p>
+            {currentCategory && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Code: {currentCategory.prefix}-{item.productCode}
+              </p>
+            )}
           </div>
         ))}
         <div
@@ -85,7 +95,9 @@ export function FFECategoryTable({ items, category, isEditable, viewMode }: FFEC
                 {isEditable ? (
                   <Input value={item.productCode} className="w-24" />
                 ) : (
-                  item.productCode
+                  <span>
+                    {currentCategory && `${currentCategory.prefix}-`}{item.productCode}
+                  </span>
                 )}
               </TableCell>
               <TableCell>{item.name}</TableCell>

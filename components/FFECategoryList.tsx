@@ -6,6 +6,7 @@ import { FFECategoryTable } from '@/components/FFECategoryTable'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ChevronDown, Printer, Share2, Edit, Save, Trash } from 'lucide-react'
+import { useFFE } from './FFEContext'
 
 interface FFECategoryListProps {
   schedule: Schedule
@@ -15,12 +16,15 @@ interface FFECategoryListProps {
 
 export function FFECategoryList({ schedule, searchTerm, viewMode }: FFECategoryListProps) {
   const [editableCategories, setEditableCategories] = useState<Record<string, boolean>>({})
+  const { currentProjectId, getCategories } = useFFE()
+  const categories = currentProjectId ? getCategories(currentProjectId) : []
 
-  const groupedItems = schedule.items.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = []
+  // Group items by category
+  const groupedItems = categories.reduce((acc, category) => {
+    acc[category.name] = schedule.items.filter(item => item.category === category.name)
+    if (!acc[category.name]) {
+      acc[category.name] = []
     }
-    acc[item.category].push(item)
     return acc
   }, {} as Record<string, FFEItem[]>)
 
@@ -75,39 +79,54 @@ export function FFECategoryList({ schedule, searchTerm, viewMode }: FFECategoryL
     setEditableCategories(prev => ({ ...prev, [category]: false }))
   }
 
+  if (categories.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-2">No categories have been created yet.</p>
+          <p className="text-sm text-muted-foreground">
+            Use the "Add New Category" button in the header to create categories.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
-      {Object.entries(groupedItems).map(([category, items]) => (
-        <Collapsible key={category} className="mb-4">
+      {categories.map(category => (
+        <Collapsible key={category.id} className="mb-4">
           <div className="flex items-center justify-between w-full p-2 bg-muted rounded-t-lg">
             <CollapsibleTrigger asChild>
               <div className="flex items-center space-x-2 cursor-pointer">
-                <h2 className="text-lg font-semibold">{category} ({items.length})</h2>
+                <h2 className="text-lg font-semibold">
+                  {category.name} ({groupedItems[category.name]?.length || 0})
+                </h2>
                 <ChevronDown className="h-4 w-4" />
               </div>
             </CollapsibleTrigger>
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium">
-                Total: ${calculateCategoryTotal(items).toLocaleString()}
+                Total: ${calculateCategoryTotal(groupedItems[category.name] || []).toLocaleString()}
               </span>
-              <div onClick={(e) => handlePrint(category, e)}>
+              <div onClick={(e) => handlePrint(category.name, e)}>
                 <Button variant="ghost" size="sm">
                   <Printer className="h-4 w-4" />
                 </Button>
               </div>
-              <div onClick={(e) => handleShare(category, e)}>
+              <div onClick={(e) => handleShare(category.name, e)}>
                 <Button variant="ghost" size="sm">
                   <Share2 className="h-4 w-4" />
                 </Button>
               </div>
-              {editableCategories[category] ? (
-                <div onClick={(e) => handleSaveCategory(category, e)}>
+              {editableCategories[category.name] ? (
+                <div onClick={(e) => handleSaveCategory(category.name, e)}>
                   <Button variant="ghost" size="sm">
                     <Save className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
-                <div onClick={(e) => handleEditCategory(category, e)}>
+                <div onClick={(e) => handleEditCategory(category.name, e)}>
                   <Button variant="ghost" size="sm">
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -121,11 +140,11 @@ export function FFECategoryList({ schedule, searchTerm, viewMode }: FFECategoryL
             </div>
           </div>
           <CollapsibleContent>
-            <div id={`category-${category}`}>
+            <div id={`category-${category.name}`}>
               <FFECategoryTable
-                items={items}
-                category={category}
-                isEditable={editableCategories[category]}
+                items={groupedItems[category.name] || []}
+                category={category.name}
+                isEditable={editableCategories[category.name]}
                 viewMode={viewMode}
               />
             </div>

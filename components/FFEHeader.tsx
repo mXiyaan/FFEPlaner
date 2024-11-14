@@ -1,10 +1,81 @@
 'use client'
 
+import { useState } from 'react'
 import { useFFE } from '@/components/FFEContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Menu, Search, List, Grid, Save, FileDown } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Menu, Search, List, Grid, Save, FileDown, Plus } from 'lucide-react'
+
+interface CategoryDialogProps {
+  isOpen: boolean
+  onClose: () => void
+  onAdd: (name: string, prefix: string) => void
+}
+
+function AddCategoryDialog({ isOpen, onClose, onAdd }: CategoryDialogProps) {
+  const [categoryName, setCategoryName] = useState('')
+  const [prefix, setPrefix] = useState('')
+  const [error, setError] = useState('')
+
+  const handleSubmit = () => {
+    if (!categoryName.trim()) {
+      setError('Category name is required')
+      return
+    }
+    if (!prefix.trim()) {
+      setError('Prefix is required')
+      return
+    }
+    onAdd(categoryName.trim(), prefix.trim().toUpperCase())
+    setCategoryName('')
+    setPrefix('')
+    setError('')
+    onClose()
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add New Category</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="categoryName">Category Name</Label>
+            <Input
+              id="categoryName"
+              value={categoryName}
+              onChange={(e) => setCategoryName(e.target.value)}
+              placeholder="e.g., Seating, Lighting"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="prefix">Category Prefix</Label>
+            <Input
+              id="prefix"
+              value={prefix}
+              onChange={(e) => setPrefix(e.target.value)}
+              placeholder="e.g., ST, LT"
+              maxLength={3}
+              className="uppercase"
+            />
+            <p className="text-sm text-muted-foreground">
+              Maximum 3 characters, will be automatically capitalized
+            </p>
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSubmit}>Add Category</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 interface FFEHeaderProps {
   isSidebarOpen: boolean
@@ -12,9 +83,17 @@ interface FFEHeaderProps {
 }
 
 export function FFEHeader({ isSidebarOpen, onToggleSidebar }: FFEHeaderProps) {
-  const { projects, currentProjectId, currentScheduleId } = useFFE()
+  const { projects, currentProjectId, currentScheduleId, addCategory, getCategories } = useFFE()
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false)
   const currentProject = projects.find(p => p.id === currentProjectId)
   const currentSchedule = currentProject?.schedules.find(s => s.id === currentScheduleId)
+  const categories = currentProjectId ? getCategories(currentProjectId) : []
+
+  const handleAddCategory = (name: string, prefix: string) => {
+    if (currentProjectId) {
+      addCategory(currentProjectId, name, prefix)
+    }
+  }
 
   return (
     <header className="bg-background p-4 border-b">
@@ -38,11 +117,21 @@ export function FFEHeader({ isSidebarOpen, onToggleSidebar }: FFEHeaderProps) {
               <SelectValue placeholder="Navigate to Section" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="seating">Seating</SelectItem>
-              <SelectItem value="lighting">Lighting</SelectItem>
+              {categories.map(category => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Button>Add New Category</Button>
+          <Button 
+            onClick={() => setIsAddCategoryOpen(true)}
+            disabled={!currentScheduleId}
+            title={!currentScheduleId ? "Create a schedule first to add categories" : ""}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Category
+          </Button>
         </div>
 
         <div className="flex items-center space-x-2">
@@ -75,6 +164,12 @@ export function FFEHeader({ isSidebarOpen, onToggleSidebar }: FFEHeaderProps) {
           </Button>
         </div>
       </div>
+
+      <AddCategoryDialog
+        isOpen={isAddCategoryOpen}
+        onClose={() => setIsAddCategoryOpen(false)}
+        onAdd={handleAddCategory}
+      />
     </header>
   )
 }

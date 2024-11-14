@@ -13,6 +13,7 @@ import EditScheduleDialog from './EditScheduleDialog'
 import EditProjectDialog from './EditProjectDialog'
 import { Project, Schedule } from '@/types/ffe'
 import { Separator } from "@/components/ui/separator"
+import { cn } from '@/lib/utils'
 
 interface FFESidebarProps {
   isOpen: boolean
@@ -41,6 +42,7 @@ export function FFESidebar({ isOpen, currentView, onViewChange }: FFESidebarProp
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [editingSchedule, setEditingSchedule] = useState<{ projectId: string, schedule: Schedule } | null>(null)
   const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set())
 
   const router = useRouter()
   const pathname = usePathname()
@@ -56,9 +58,13 @@ export function FFESidebar({ isOpen, currentView, onViewChange }: FFESidebarProp
 
   const handleAddSchedule = (scheduleName: string, budget?: number) => {
     if (selectedProjectId) {
-      addSchedule(selectedProjectId, scheduleName, budget)
+      const newScheduleId = addSchedule(selectedProjectId, scheduleName, budget)
       setIsAddScheduleOpen(false)
       setSelectedProjectId(null)
+      // Ensure the project is expanded when a new schedule is added
+      setExpandedProjects(prev => new Set([...prev, selectedProjectId]))
+      // Navigate to the new schedule
+      router.push(`/projects/${selectedProjectId}`)
     }
   }
 
@@ -105,77 +111,98 @@ export function FFESidebar({ isOpen, currentView, onViewChange }: FFESidebarProp
     router.push(`/projects/${projectId}`)
   }
 
+  const toggleProjectExpanded = (projectId: string) => {
+    setExpandedProjects(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId)
+      } else {
+        newSet.add(projectId)
+      }
+      return newSet
+    })
+  }
+
   const navigateTo = (path: string) => {
     router.push(path)
   }
 
-  const renderProject = (project: Project) => (
-    <Collapsible key={project.id}>
-      <div className="flex items-center justify-between w-full p-2 hover:bg-accent rounded-lg">
-        <CollapsibleTrigger asChild>
-          <div className="flex items-center flex-grow cursor-pointer">
-            <Folder className="mr-2 h-4 w-4" />
-            <div className="flex flex-col">
-              <span className="text-sm font-medium">{project.name}</span>
-              {project.clientName && (
-                <span className="text-xs text-muted-foreground">{project.clientName}</span>
-              )}
+  const renderProject = (project: Project) => {
+    const isExpanded = expandedProjects.has(project.id)
+    const isCurrentProject = project.id === currentProjectId
+
+    return (
+      <Collapsible key={project.id} open={isExpanded}>
+        <div className={cn(
+          "flex items-center justify-between w-full p-2 hover:bg-accent rounded-lg",
+          isCurrentProject && "bg-accent"
+        )}>
+          <CollapsibleTrigger asChild onClick={() => toggleProjectExpanded(project.id)}>
+            <div className="flex items-center flex-grow cursor-pointer">
+              <Folder className="mr-2 h-4 w-4" />
+              <div className="flex flex-col">
+                <span className="text-sm font-medium">{project.name}</span>
+                {project.clientName && (
+                  <span className="text-xs text-muted-foreground">{project.clientName}</span>
+                )}
+              </div>
             </div>
-          </div>
-        </CollapsibleTrigger>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="flex items-center">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                <MoreVertical className="h-4 w-4" />
+          </CollapsibleTrigger>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex items-center">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleEditProject(project)}>
+                <Edit2 className="mr-2 h-4 w-4" />
+                Edit Project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <CollapsibleContent className="ml-4 space-y-2">
+          {project.schedules.map(schedule => (
+            <div
+              key={schedule.id}
+              onClick={() => handleProjectClick(project.id, schedule.id)}
+              className={cn(
+                "flex items-center justify-between w-full p-2 hover:bg-accent rounded-lg cursor-pointer",
+                schedule.id === currentScheduleId && "bg-accent/50"
+              )}
+            >
+              <div className="flex items-center flex-grow">
+                <File className="mr-2 h-4 w-4" />
+                <span className="text-sm">{schedule.name}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleEditSchedule(project.id, schedule)
+                }}
+              >
+                <Edit2 className="h-4 w-4" />
               </Button>
             </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => handleEditProject(project)}>
-              <Edit2 className="mr-2 h-4 w-4" />
-              Edit Project
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      <CollapsibleContent className="ml-4 space-y-2">
-        {project.schedules.map(schedule => (
+          ))}
           <div
-            key={schedule.id}
-            className="flex items-center justify-between w-full p-2 hover:bg-accent rounded-lg cursor-pointer"
+            onClick={() => handleAddScheduleClick(project.id)}
+            className="flex items-center w-full p-2 hover:bg-accent rounded-lg cursor-pointer"
           >
-            <div
-              className="flex items-center flex-grow"
-              onClick={() => handleProjectClick(project.id, schedule.id)}
-            >
-              <File className="mr-2 h-4 w-4" />
-              <span className="text-sm">{schedule.name}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleEditSchedule(project.id, schedule)
-              }}
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            <span className="text-sm">Add Schedule</span>
           </div>
-        ))}
-        <div
-          onClick={() => handleAddScheduleClick(project.id)}
-          className="flex items-center w-full p-2 hover:bg-accent rounded-lg cursor-pointer"
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          <span className="text-sm">Add Schedule</span>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
-  )
+        </CollapsibleContent>
+      </Collapsible>
+    )
+  }
 
   return (
     <>

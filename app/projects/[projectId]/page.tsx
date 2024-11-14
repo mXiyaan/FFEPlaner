@@ -32,8 +32,9 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
   }
 
   const handleAddSchedule = (name: string, budget?: number) => {
-    addSchedule(params.projectId, name, budget)
+    const scheduleId = addSchedule(params.projectId, name, budget)
     setIsAddScheduleOpen(false)
+    return scheduleId
   }
 
   return (

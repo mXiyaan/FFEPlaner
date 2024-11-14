@@ -16,7 +16,7 @@ type DashboardProps = {
 export default function Dashboard({ onToggleSidebar }: DashboardProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
-  const { projects } = useFFE()
+  const { projects, setCurrentProjectId } = useFFE()
   const router = useRouter()
 
   const filteredProjects = projects
@@ -29,11 +29,11 @@ export default function Dashboard({ onToggleSidebar }: DashboardProps) {
     })
     .filter(project => {
       if (filterStatus === 'all') return true
-      // Add more filter logic here when project status is implemented
       return true
     })
 
   const handleProjectClick = (projectId: string) => {
+    setCurrentProjectId(projectId)
     router.push(`/projects/${projectId}`)
   }
 
@@ -97,7 +97,7 @@ export default function Dashboard({ onToggleSidebar }: DashboardProps) {
                       <p className="text-sm font-medium">{project.clientName}</p>
                     )}
                     <div className="flex flex-wrap gap-1">
-                      {project.schedules.map((schedule, index) => (
+                      {project.schedules.map((schedule) => (
                         <span 
                           key={schedule.id} 
                           className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full"

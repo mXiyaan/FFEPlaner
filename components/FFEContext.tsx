@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode } from 'react'
-import { Project, Schedule } from '@/types/ffe'
+import { Project, Schedule, Category } from '@/types/ffe'
 
 interface FFEContextType {
   projects: Project[]
@@ -10,12 +10,14 @@ interface FFEContextType {
   setCurrentProjectId: (id: string | null) => void
   currentScheduleId: string | null
   setCurrentScheduleId: (id: string | null) => void
-  addSchedule: (projectId: string, name: string, budget?: number) => void
+  addSchedule: (projectId: string, name: string, budget?: number) => string
   updateSchedule: (projectId: string, scheduleId: string, name: string, budget?: number) => void
   deleteSchedule: (projectId: string, scheduleId: string) => void
   addProject: (project: Pick<Project, 'name' | 'totalBudget' | 'clientName'>) => string
   updateProject: (projectId: string, project: Partial<Project>) => void
   deleteProject: (projectId: string) => void
+  addCategory: (projectId: string, name: string, prefix: string) => void
+  getCategories: (projectId: string) => Category[]
 }
 
 const FFEContext = createContext<FFEContextType | undefined>(undefined)
@@ -25,13 +27,16 @@ export function FFEProvider({ children }: { children: ReactNode }) {
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null)
   const [currentScheduleId, setCurrentScheduleId] = useState<string | null>(null)
 
+  const generateId = () => Math.random().toString(36).substr(2, 9)
+
   const addProject = (projectData: Pick<Project, 'name' | 'totalBudget' | 'clientName'>) => {
     const newProject: Project = {
-      id: `project${projects.length + 1}`,
+      id: generateId(),
       name: projectData.name,
       clientName: projectData.clientName,
       totalBudget: projectData.totalBudget,
-      schedules: []
+      schedules: [],
+      categories: []
     }
     setProjects(prev => [...prev, newProject])
     setCurrentProjectId(newProject.id)
@@ -58,11 +63,12 @@ export function FFEProvider({ children }: { children: ReactNode }) {
   }
 
   const addSchedule = (projectId: string, name: string, budget?: number) => {
+    const scheduleId = generateId()
     setProjects(prevProjects => {
       return prevProjects.map(project => {
         if (project.id === projectId) {
           const newSchedule = {
-            id: `schedule${project.schedules.length + 1}`,
+            id: scheduleId,
             name,
             budget: budget || 0,
             items: []
@@ -75,6 +81,8 @@ export function FFEProvider({ children }: { children: ReactNode }) {
         return project
       })
     })
+    setCurrentScheduleId(scheduleId)
+    return scheduleId
   }
 
   const updateSchedule = (projectId: string, scheduleId: string, name: string, budget?: number) => {
@@ -117,6 +125,30 @@ export function FFEProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const addCategory = (projectId: string, name: string, prefix: string) => {
+    setProjects(prevProjects => {
+      return prevProjects.map(project => {
+        if (project.id === projectId) {
+          const newCategory: Category = {
+            id: generateId(),
+            name,
+            prefix
+          }
+          return {
+            ...project,
+            categories: [...project.categories, newCategory]
+          }
+        }
+        return project
+      })
+    })
+  }
+
+  const getCategories = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId)
+    return project?.categories || []
+  }
+
   return (
     <FFEContext.Provider
       value={{
@@ -131,7 +163,9 @@ export function FFEProvider({ children }: { children: ReactNode }) {
         deleteSchedule,
         addProject,
         updateProject,
-        deleteProject
+        deleteProject,
+        addCategory,
+        getCategories
       }}
     >
       {children}

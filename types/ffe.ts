@@ -20,6 +20,12 @@ export type FFEItem = {
   alternatives: string[]
 }
 
+export type Category = {
+  id: string
+  name: string
+  prefix: string
+}
+
 export type Schedule = {
   id: string
   name: string
@@ -33,9 +39,5 @@ export type Project = {
   clientName?: string
   schedules: Schedule[]
   totalBudget: number
-}
-
-export type CategoryPrefix = {
-  category: string
-  prefix: string
+  categories: Category[]
 }
