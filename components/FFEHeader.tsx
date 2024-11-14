@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Menu, Search, List, Grid, Save, FileDown, Plus, Eye } from 'lucide-react'
-import PDFPreviewDialog from './PDFPreviewDialog'
+import PDFPreviewDialog from '@/components/pdf/PDFPreviewDialog'
 
 interface CategoryDialogProps {
   isOpen: boolean
@@ -16,6 +16,7 @@ interface CategoryDialogProps {
   onAdd: (name: string, prefix: string) => void
 }
 
+// Rest of the FFEHeader component remains exactly the same
 function AddCategoryDialog({ isOpen, onClose, onAdd }: CategoryDialogProps) {
   const [categoryName, setCategoryName] = useState('')
   const [prefix, setPrefix] = useState('')
