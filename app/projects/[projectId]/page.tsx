@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { FFESidebar } from '@/components/FFESidebar'
 import FFEHeader from '@/components/FFEHeader'
 import { FFEDashboard } from '@/components/FFEDashboard'
@@ -12,13 +13,22 @@ import { CalendarPlus } from 'lucide-react'
 export default function ProjectPage({ params }: { params: { projectId: string } }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false)
-  const { projects, setCurrentProjectId, currentScheduleId, addSchedule } = useFFE()
+  const { projects, setCurrentProjectId, addSchedule } = useFFE()
+  const router = useRouter()
   
   const project = projects.find(p => p.id === params.projectId)
 
   useEffect(() => {
-    setCurrentProjectId(params.projectId)
+    if (params.projectId) {
+      setCurrentProjectId(params.projectId)
+    }
   }, [params.projectId, setCurrentProjectId])
+
+  useEffect(() => {
+    if (!project) {
+      router.push('/')
+    }
+  }, [project, router])
   
   if (!project) {
     return (

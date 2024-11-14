@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react'
 import { Project, Schedule, Category, FFEItem } from '@/types/ffe'
 import { Product } from '@/types/product'
+import { v4 as uuidv4 } from 'uuid'
 
 export type PDFTheme = 'modern' | 'classic' | 'minimal'
 
@@ -73,7 +74,7 @@ export function FFEProvider({ children }: { children: ReactNode }) {
   const [pdfTheme, setPDFTheme] = useState<PDFTheme>('modern')
   const [pdfColumnVisibility, setPDFColumnVisibility] = useState<PDFColumnVisibility>(defaultColumnVisibility)
 
-  const generateId = () => Math.random().toString(36).substr(2, 9)
+  const generateId = () => uuidv4()
 
   const addProject = (projectData: Pick<Project, 'name' | 'totalBudget' | 'clientName'>) => {
     const newProject: Project = {
@@ -178,7 +179,7 @@ export function FFEProvider({ children }: { children: ReactNode }) {
           const newCategory: Category = {
             id: generateId(),
             name,
-            prefix
+            prefix: prefix.toUpperCase()
           }
           return {
             ...project,
@@ -196,12 +197,17 @@ export function FFEProvider({ children }: { children: ReactNode }) {
   }
 
   const addFFEItem = (projectId: string, scheduleId: string, categoryId: string, product: Product, quantity: number) => {
+    const project = projects.find(p => p.id === projectId)
+    const category = project?.categories.find(c => c.id === categoryId)
+
+    if (!project || !category) return
+
     const newItem: FFEItem = {
       id: generateId(),
-      category: product.category,
+      category: category.name,
       name: product.name,
       product: product.name,
-      productCode: generateId().substring(0, 6).toUpperCase(),
+      productCode: `${category.prefix}-${generateId().substring(0, 6).toUpperCase()}`,
       brand: product.brand,
       dimensions: product.specifications.dimensions,
       material: product.specifications.material,
@@ -216,22 +222,22 @@ export function FFEProvider({ children }: { children: ReactNode }) {
     }
 
     setProjects(prevProjects => {
-      return prevProjects.map(project => {
-        if (project.id === projectId) {
+      return prevProjects.map(p => {
+        if (p.id === projectId) {
           return {
-            ...project,
-            schedules: project.schedules.map(schedule => {
-              if (schedule.id === scheduleId) {
+            ...p,
+            schedules: p.schedules.map(s => {
+              if (s.id === scheduleId) {
                 return {
-                  ...schedule,
-                  items: [...schedule.items, newItem]
+                  ...s,
+                  items: [...s.items, newItem]
                 }
               }
-              return schedule
+              return s
             })
           }
         }
-        return project
+        return p
       })
     })
   }

@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef } from 'react'
+import { Suspense, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
@@ -9,8 +10,37 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { PDFTheme, PDFColumnVisibility } from './FFEContext'
 import { FFEItem } from '@/types/ffe'
-import { Download } from 'lucide-react'
-import type { CheckedState } from '@radix-ui/react-checkbox'
+import { Download, Loader2 } from 'lucide-react'
+import { ErrorBoundary } from 'react-error-boundary'
+
+const PDFViewer = dynamic(
+  () => import('@react-pdf/renderer').then(mod => mod.PDFViewer),
+  { ssr: false }
+)
+
+const PDFDownloadLink = dynamic(
+  () => import('@react-pdf/renderer').then(mod => mod.PDFDownloadLink),
+  { ssr: false }
+)
+
+const PDFPreview = dynamic(() => import('./PDFPreview'), { ssr: false })
+
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <Loader2 className="h-8 w-8 animate-spin" />
+    </div>
+  )
+}
+
+function ErrorFallback({ error }: { error: Error }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full p-4">
+      <h2 className="text-lg font-semibold text-red-600 mb-2">Error loading PDF preview</h2>
+      <p className="text-sm text-gray-600 text-center">{error.message}</p>
+    </div>
+  )
+}
 
 interface PDFPreviewDialogProps {
   isOpen: boolean
@@ -37,43 +67,23 @@ export default function PDFPreviewDialog({
   scheduleName,
   clientName
 }: PDFPreviewDialogProps) {
-  const previewRef = useRef<HTMLDivElement>(null)
-
-  const handleGeneratePDF = async () => {
-    if (!previewRef.current) return
-
-    const jsPDF = (await import('jspdf')).default
-    const html2canvas = (await import('html2canvas')).default
-
-    const pdf = new jsPDF('l', 'mm', 'a3')
-    
-    // Add cover page
-    pdf.setFontSize(40)
-    pdf.text(projectName, 150, 100, { align: 'center' })
-    pdf.setFontSize(24)
-    pdf.text(scheduleName, 150, 120, { align: 'center' })
-    if (clientName) {
-      pdf.setFontSize(16)
-      pdf.text(`Client: ${clientName}`, 150, 140, { align: 'center' })
-    }
-    pdf.setFontSize(12)
-    pdf.text('Acme Design Studio', 150, 280, { align: 'center' })
-
-    // Add content pages
-    const canvas = await html2canvas(previewRef.current)
-    const imgData = canvas.toDataURL('image/png')
-    pdf.addPage()
-    pdf.addImage(imgData, 'PNG', 10, 10, 400, 277) // A3 dimensions
-
-    pdf.save(`${projectName}-${scheduleName}.pdf`)
-  }
-
-  const handleCheckboxChange = (key: keyof PDFColumnVisibility, checked: CheckedState) => {
+  const handleCheckboxChange = (key: keyof PDFColumnVisibility, checked: boolean) => {
     onColumnVisibilityChange({
       ...columnVisibility,
-      [key]: checked === true
+      [key]: checked
     })
   }
+
+  const PreviewDocument = () => (
+    <PDFPreview
+      items={items}
+      theme={theme}
+      columnVisibility={columnVisibility}
+      projectName={projectName}
+      scheduleName={scheduleName}
+      clientName={clientName}
+    />
+  )
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -107,7 +117,7 @@ export default function PDFPreviewDialog({
                         id={key}
                         checked={value}
                         onCheckedChange={(checked) => 
-                          handleCheckboxChange(key as keyof PDFColumnVisibility, checked)
+                          handleCheckboxChange(key as keyof PDFColumnVisibility, checked as boolean)
                         }
                       />
                       <Label htmlFor={key} className="capitalize">
@@ -119,18 +129,31 @@ export default function PDFPreviewDialog({
               </ScrollArea>
             </div>
 
-            <div className="flex space-x-2">
-              <Button onClick={handleGeneratePDF} className="w-full">
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </Button>
-            </div>
+            <ErrorBoundary FallbackComponent={ErrorFallback}>
+              <Suspense fallback={<Button className="w-full" disabled><Loader2 className="w-4 h-4 mr-2 animate-spin" />Loading...</Button>}>
+                <PDFDownloadLink
+                  document={<PreviewDocument />}
+                  fileName={`${projectName}-${scheduleName}.pdf`}
+                >
+                  {({ loading, error }) => (
+                    <Button className="w-full" disabled={loading}>
+                      <Download className="w-4 h-4 mr-2" />
+                      {loading ? 'Preparing PDF...' : error ? 'Error' : 'Download PDF'}
+                    </Button>
+                  )}
+                </PDFDownloadLink>
+              </Suspense>
+            </ErrorBoundary>
           </div>
 
-          <div className="h-full overflow-auto">
-            <div ref={previewRef} className="p-8">
-              {/* ... rest of your preview content ... */}
-            </div>
+          <div className="h-full overflow-auto bg-white rounded-lg shadow">
+            <ErrorBoundary FallbackComponent={ErrorFallback}>
+              <Suspense fallback={<LoadingSpinner />}>
+                <PDFViewer width="100%" height="100%" className="border-0">
+                  <PreviewDocument />
+                </PDFViewer>
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
       </DialogContent>
