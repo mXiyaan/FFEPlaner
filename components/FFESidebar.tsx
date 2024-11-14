@@ -244,7 +244,7 @@ export function FFESidebar({ isOpen, currentView, onViewChange }: FFESidebarProp
             setSelectedProjectId(null)
           }}
           onAddSchedule={handleAddSchedule}
-          projectBudgetType="Flexible Budget"
+          projectId={selectedProjectId}
         />
       )}
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FFESidebar } from '@/components/FFESidebar'
 import { FFEHeader } from '@/components/FFEHeader'
 import { FFEDashboard } from '@/components/FFEDashboard'
@@ -15,6 +15,10 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
   const { projects, setCurrentProjectId, currentScheduleId, addSchedule } = useFFE()
   
   const project = projects.find(p => p.id === params.projectId)
+
+  useEffect(() => {
+    setCurrentProjectId(params.projectId)
+  }, [params.projectId, setCurrentProjectId])
   
   if (!project) {
     return (
@@ -31,8 +35,6 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
     addSchedule(params.projectId, name, budget)
     setIsAddScheduleOpen(false)
   }
-
-  setCurrentProjectId(params.projectId)
 
   return (
     <div className="flex h-screen bg-background">
@@ -63,7 +65,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         isOpen={isAddScheduleOpen}
         onClose={() => setIsAddScheduleOpen(false)}
         onAddSchedule={handleAddSchedule}
-        projectBudgetType="Flexible Budget"
+        projectId={params.projectId}
       />
     </div>
   )

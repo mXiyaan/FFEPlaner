@@ -12,27 +12,28 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-type BudgetType = "No Budget Set" | "Flexible Budget" | "Fixed Budget"
+import { useFFE } from "./FFEContext"
+import { Card, CardContent } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type AddScheduleDialogProps = {
   isOpen: boolean
   onClose: () => void
   onAddSchedule: (scheduleName: string, budget?: number) => void
-  projectBudgetType: BudgetType
-  projectTotalBudget?: number
-  projectCurrentTotal?: number
+  projectId: string
 }
 
 export default function AddScheduleDialog({
-  isOpen = true,
-  onClose = () => {},
-  onAddSchedule = () => {},
-  projectBudgetType = "Flexible Budget",
-  projectTotalBudget = 10000,
-  projectCurrentTotal = 5000,
+  isOpen,
+  onClose,
+  onAddSchedule,
+  projectId
 }: AddScheduleDialogProps) {
+  const { projects } = useFFE()
+  const project = projects.find(p => p.id === projectId)
+  
   const [scheduleName, setScheduleName] = React.useState("")
+  const [budgetType, setBudgetType] = React.useState<'no-budget' | 'custom'>('no-budget')
   const [scheduleBudget, setScheduleBudget] = React.useState("")
   const [errors, setErrors] = React.useState({ scheduleName: "", scheduleBudget: "" })
   const [isLoading, setIsLoading] = React.useState(false)
@@ -46,9 +47,18 @@ export default function AddScheduleDialog({
       isValid = false
     }
 
-    if (projectBudgetType === "Fixed Budget" && (!scheduleBudget || isNaN(parseFloat(scheduleBudget)))) {
-      newErrors.scheduleBudget = "Schedule budget is required for Fixed Budget projects"
+    if (budgetType === 'custom' && (!scheduleBudget || isNaN(parseFloat(scheduleBudget)))) {
+      newErrors.scheduleBudget = "Please enter a valid budget amount"
       isValid = false
+    }
+
+    if (project?.totalBudget && budgetType === 'custom') {
+      const budget = parseFloat(scheduleBudget)
+      const totalSchedulesBudget = project.schedules.reduce((sum, s) => sum + (s.budget || 0), 0)
+      if (budget + totalSchedulesBudget > project.totalBudget) {
+        newErrors.scheduleBudget = "Schedule budget exceeds remaining project budget"
+        isValid = false
+      }
     }
 
     setErrors(newErrors)
@@ -59,9 +69,11 @@ export default function AddScheduleDialog({
     if (validateForm()) {
       setIsLoading(true)
       try {
-        await onAddSchedule(scheduleName.trim(), scheduleBudget ? parseFloat(scheduleBudget) : undefined)
+        const budget = budgetType === 'custom' ? parseFloat(scheduleBudget) : undefined
+        await onAddSchedule(scheduleName.trim(), budget)
         setScheduleName("")
         setScheduleBudget("")
+        setBudgetType('no-budget')
         onClose()
       } catch (error) {
         console.error("Error adding schedule:", error)
@@ -72,56 +84,83 @@ export default function AddScheduleDialog({
   }
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value)
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD"
+    }).format(value)
+  }
+
+  const getRemainingBudget = () => {
+    if (!project?.totalBudget) return 0
+    const totalSchedulesBudget = project.schedules.reduce((sum, s) => sum + (s.budget || 0), 0)
+    return project.totalBudget - totalSchedulesBudget
   }
 
   const renderBudgetSection = () => {
-    switch (projectBudgetType) {
-      case "No Budget Set":
-        return null
-      case "Flexible Budget":
-        return (
-          <div className="grid gap-2">
-            <Label>Project Current Total</Label>
-            <p className="text-sm font-medium">{formatCurrency(projectCurrentTotal || 0)}</p>
-          </div>
-        )
-      case "Fixed Budget":
-        return (
-          <div className="grid gap-2">
-            <Label htmlFor="scheduleBudget">Set Budget for Schedule</Label>
-            <Input
-              id="scheduleBudget"
-              type="number"
-              value={scheduleBudget}
-              onChange={(e) => setScheduleBudget(e.target.value)}
-              placeholder="Enter schedule budget"
-              aria-invalid={errors.scheduleBudget ? "true" : "false"}
-            />
-            {errors.scheduleBudget && (
-              <p className="text-sm text-destructive">{errors.scheduleBudget}</p>
-            )}
-            <p className="text-sm text-muted-foreground">Project Total Budget: {formatCurrency(projectTotalBudget || 0)}</p>
-          </div>
-        )
-    }
+    if (!project) return null
+
+    return (
+      <div className="space-y-4">
+        <Label>Budget Settings</Label>
+        <Tabs value={budgetType} onValueChange={(value: 'no-budget' | 'custom') => setBudgetType(value)}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="no-budget">No Budget</TabsTrigger>
+            <TabsTrigger value="custom">Set Budget</TabsTrigger>
+          </TabsList>
+          <TabsContent value="no-budget">
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground">
+                  No specific budget will be set for this schedule.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          <TabsContent value="custom">
+            <Card>
+              <CardContent className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="scheduleBudget">Schedule Budget</Label>
+                  <Input
+                    id="scheduleBudget"
+                    type="number"
+                    value={scheduleBudget}
+                    onChange={(e) => setScheduleBudget(e.target.value)}
+                    placeholder="Enter budget amount"
+                    className="w-full"
+                  />
+                  {errors.scheduleBudget && (
+                    <p className="text-sm text-destructive">{errors.scheduleBudget}</p>
+                  )}
+                  {project.totalBudget > 0 && (
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>Project Total Budget: {formatCurrency(project.totalBudget)}</p>
+                      <p>Remaining Budget: {formatCurrency(getRemainingBudget())}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    )
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add New Schedule</DialogTitle>
         </DialogHeader>
         <div className="grid gap-6 py-4">
-          <div className="grid gap-2">
+          <div className="space-y-2">
             <Label htmlFor="scheduleName">Schedule Name</Label>
             <Input
               id="scheduleName"
               value={scheduleName}
               onChange={(e) => setScheduleName(e.target.value)}
               placeholder="Enter schedule name"
-              aria-invalid={errors.scheduleName ? "true" : "false"}
             />
             {errors.scheduleName && (
               <p className="text-sm text-destructive">{errors.scheduleName}</p>
@@ -130,6 +169,7 @@ export default function AddScheduleDialog({
           {renderBudgetSection()}
         </div>
         <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
           <Button onClick={handleAddSchedule} disabled={isLoading}>
             {isLoading ? (
               <>
