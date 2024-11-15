@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Schedule, FFEItem } from '@/types/ffe'
 import { FFECategoryTable } from '@/components/FFECategoryTable'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ChevronDown, Printer, Share2, Edit, Save, Trash } from 'lucide-react'
 import { useFFE } from './FFEContext'
+import { cn } from '@/lib/utils'
 
 interface FFECategoryListProps {
   schedule: Schedule
@@ -16,8 +17,14 @@ interface FFECategoryListProps {
 
 export function FFECategoryList({ schedule, searchTerm, viewMode }: FFECategoryListProps) {
   const [editableCategories, setEditableCategories] = useState<Record<string, boolean>>({})
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const { currentProjectId, getCategories } = useFFE()
   const categories = currentProjectId ? getCategories(currentProjectId) : []
+
+  // Auto-expand all categories initially
+  useEffect(() => {
+    setExpandedCategories(new Set(categories.map(cat => cat.name)))
+  }, [categories])
 
   // Group items by category
   const groupedItems = categories.reduce((acc, category) => {
@@ -79,6 +86,18 @@ export function FFECategoryList({ schedule, searchTerm, viewMode }: FFECategoryL
     setEditableCategories(prev => ({ ...prev, [category]: false }))
   }
 
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(category)) {
+        newSet.delete(category)
+      } else {
+        newSet.add(category)
+      }
+      return newSet
+    })
+  }
+
   if (categories.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -95,14 +114,22 @@ export function FFECategoryList({ schedule, searchTerm, viewMode }: FFECategoryL
   return (
     <div className="space-y-4">
       {categories.map(category => (
-        <Collapsible key={category.id} className="mb-4">
+        <Collapsible 
+          key={category.id} 
+          className="mb-4"
+          open={expandedCategories.has(category.name)}
+          onOpenChange={() => toggleCategory(category.name)}
+        >
           <div className="flex items-center justify-between w-full p-2 bg-muted rounded-t-lg">
             <CollapsibleTrigger asChild>
               <div className="flex items-center space-x-2 cursor-pointer">
+                <ChevronDown className={cn(
+                  "h-4 w-4 transition-transform duration-200",
+                  !expandedCategories.has(category.name) && "-rotate-90"
+                )} />
                 <h2 className="text-lg font-semibold">
                   {category.name} ({groupedItems[category.name]?.length || 0})
                 </h2>
-                <ChevronDown className="h-4 w-4" />
               </div>
             </CollapsibleTrigger>
             <div className="flex items-center space-x-2">

@@ -42,6 +42,7 @@ export default function NewProjectButton({
   const [budget, setBudget] = useState('')
   const [currency, setCurrency] = useState(userSettings?.defaultCurrency || 'USD')
   const [unitSystem, setUnitSystem] = useState(userSettings?.defaultUnitSystem || 'metric')
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleOpenDialog = () => setIsDialogOpen(true)
   const handleCloseDialog = () => {
@@ -62,16 +63,41 @@ export default function NewProjectButton({
     setBudget('')
     setCurrency(userSettings?.defaultCurrency || 'USD')
     setUnitSystem(userSettings?.defaultUnitSystem || 'metric')
+    setErrors({})
+  }
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!projectName.trim()) {
+      newErrors.projectName = 'Project name is required'
+    }
+
+    if (clientName === 'new' && !newClientName.trim()) {
+      newErrors.newClientName = 'Client name is required'
+    }
+
+    if (budgetType === 'fixed') {
+      if (!budget) {
+        newErrors.budget = 'Budget amount is required'
+      } else if (isNaN(parseFloat(budget)) || parseFloat(budget) <= 0) {
+        newErrors.budget = 'Please enter a valid budget amount'
+      }
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleAddProject = () => {
-    if (projectName.trim()) {
+    if (validateForm()) {
       const projectId = addProject({
         name: projectName.trim(),
         clientName: clientName === 'new' ? newClientName.trim() : clientName,
         totalBudget: budgetType === 'fixed' && budget ? parseFloat(budget) : 0
       })
       handleCloseDialog()
+      // Redirect to the project page immediately after creation
       router.push(`/projects/${projectId}`)
     }
   }
@@ -97,7 +123,11 @@ export default function NewProjectButton({
                     id="projectName"
                     value={projectName}
                     onChange={(e) => setProjectName(e.target.value)}
+                    className={errors.projectName ? 'border-destructive' : ''}
                   />
+                  {errors.projectName && (
+                    <p className="text-sm text-destructive">{errors.projectName}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="clientSelect">Client</Label>
@@ -125,7 +155,7 @@ export default function NewProjectButton({
               </div>
               <div className="space-y-4">
                 <Label className="text-lg font-semibold">Budget</Label>
-                <Tabs defaultValue="no-budget" onValueChange={setBudgetType}>
+                <Tabs defaultValue="no-budget" onValueChange={setBudgetType} value={budgetType}>
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="no-budget">No Budget</TabsTrigger>
                     <TabsTrigger value="flexible">Flexible</TabsTrigger>
@@ -156,7 +186,7 @@ export default function NewProjectButton({
                             value={budget}
                             onChange={(e) => setBudget(e.target.value)}
                             placeholder="Enter amount"
-                            className="w-32"
+                            className={`w-32 ${errors.budget ? 'border-destructive' : ''}`}
                           />
                           <Select value={currency} onValueChange={setCurrency}>
                             <SelectTrigger className="w-24">
@@ -169,6 +199,9 @@ export default function NewProjectButton({
                             </SelectContent>
                           </Select>
                         </div>
+                        {errors.budget && (
+                          <p className="text-sm text-destructive">{errors.budget}</p>
+                        )}
                       </CardContent>
                     </Card>
                   </TabsContent>
@@ -198,7 +231,11 @@ export default function NewProjectButton({
                       id="newClientName"
                       value={newClientName}
                       onChange={(e) => setNewClientName(e.target.value)}
+                      className={errors.newClientName ? 'border-destructive' : ''}
                     />
+                    {errors.newClientName && (
+                      <p className="text-sm text-destructive">{errors.newClientName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="contactPerson">Contact Person</Label>
