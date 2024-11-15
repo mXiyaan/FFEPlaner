@@ -4,14 +4,11 @@ const nextConfig = {
     domains: ['images.unsplash.com'],
   },
   webpack: (config) => {
-    // Critical: Properly handle PDF renderer dependencies
     config.resolve.alias = {
       ...config.resolve.alias,
-      canvas: false,
-      encoding: false,
+      canvas: false
     }
     
-    // Required browser polyfills for @react-pdf/renderer
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -22,7 +19,7 @@ const nextConfig = {
       zlib: false,
       util: false,
       iconv: false,
-      path: false,
+      path: false
     }
     
     return config

@@ -17,7 +17,6 @@ import modernTheme from './themes/modern'
 import classicTheme from './themes/classic'
 import minimalTheme from './themes/minimal'
 
-// Dynamically import PDFViewer with strict client-side only rendering
 const PDFViewer = dynamic(
   () => import('@react-pdf/renderer').then(mod => mod.PDFViewer),
   { ssr: false }
@@ -76,6 +75,14 @@ export default function PDFPreviewDialog({
   if (!isOpen) return null
 
   const themeStyles = getThemeStyles(theme)
+
+  const handleCheckboxChange = (key: keyof PDFColumnVisibility, checked: boolean) => {
+    onColumnVisibilityChange({
+      ...columnVisibility,
+      [key]: checked
+    })
+  }
+
   const pdfDocument = (
     <PDFDocument
       items={items}

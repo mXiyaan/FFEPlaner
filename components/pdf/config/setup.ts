@@ -1,5 +1,4 @@
 import { Font } from '@react-pdf/renderer'
-import { Platform } from '@react-pdf/types'
 
 // Register fonts
 Font.register({
@@ -18,15 +17,6 @@ Font.register({
 
 // Configure default page size and platform
 export const defaultPageConfig = {
-  size: 'A3',
+  size: 'A4',
   orientation: 'landscape'
-} as const
-
-// Set platform to browser to avoid Node.js specific features
-export const platform: Platform = 'browser'
-
-// PDF rendering configuration
-export const pdfConfig = {
-  compress: true,
-  updateMetadata: true
 } as const
