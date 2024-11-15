@@ -11,7 +11,7 @@ interface PDFTableProps {
 
 const PDFTable: React.FC<PDFTableProps> = ({ items, columnVisibility, styles }) => {
   const renderHeader = () => (
-    <View style={[styles.tableRow, styles.tableHeader]}>
+    <View style={[styles.tableRow, styles.tableHeader]} wrap={false}>
       {Object.entries(columnVisibility)
         .filter(([_, isVisible]) => isVisible)
         .map(([column]) => (
@@ -23,7 +23,7 @@ const PDFTable: React.FC<PDFTableProps> = ({ items, columnVisibility, styles }) 
   )
 
   const renderRow = (item: FFEItem) => (
-    <View key={item.id} style={styles.tableRow}>
+    <View key={item.id} style={styles.tableRow} wrap={false}>
       {Object.entries(columnVisibility)
         .filter(([_, isVisible]) => isVisible)
         .map(([column]) => (

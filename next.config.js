@@ -4,13 +4,26 @@ const nextConfig = {
     domains: ['images.unsplash.com'],
   },
   webpack: (config) => {
-    config.module.rules.push({
-      test: /\.pdf$/,
-      use: 'file-loader',
-    })
+    // Critical: Properly handle PDF renderer dependencies
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+      encoding: false,
+    }
     
-    // Fix for @react-pdf/renderer
-    config.externals = [...(config.externals || []), { canvas: "canvas" }]
+    // Required browser polyfills for @react-pdf/renderer
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      stream: false,
+      canvas: false,
+      encoding: false,
+      'process/browser': false,
+      zlib: false,
+      util: false,
+      iconv: false,
+      path: false,
+    }
     
     return config
   },

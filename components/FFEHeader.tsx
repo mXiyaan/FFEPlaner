@@ -1,14 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useFFE } from '@/components/FFEContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Menu, Search, List, Grid, Save, FileDown, Plus, Eye } from 'lucide-react'
-import PDFPreviewDialog from '@/components/pdf/PDFPreviewDialog'
+import dynamic from 'next/dynamic'
+
+const PDFPreviewDialog = dynamic(
+  () => import('@/components/pdf/PDFPreviewDialog'),
+  { 
+    ssr: false,
+    loading: () => (
+      <Dialog open>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Loading PDF Preview...</DialogTitle>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+)
 
 interface CategoryDialogProps {
   isOpen: boolean
@@ -16,13 +39,14 @@ interface CategoryDialogProps {
   onAdd: (name: string, prefix: string) => void
 }
 
-// Rest of the FFEHeader component remains exactly the same
 function AddCategoryDialog({ isOpen, onClose, onAdd }: CategoryDialogProps) {
   const [categoryName, setCategoryName] = useState('')
   const [prefix, setPrefix] = useState('')
   const [error, setError] = useState('')
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
+    setError('')
+    
     if (!categoryName.trim()) {
       setError('Category name is required')
       return
@@ -31,18 +55,25 @@ function AddCategoryDialog({ isOpen, onClose, onAdd }: CategoryDialogProps) {
       setError('Prefix is required')
       return
     }
-    onAdd(categoryName.trim(), prefix.trim().toUpperCase())
-    setCategoryName('')
-    setPrefix('')
-    setError('')
-    onClose()
-  }
+
+    try {
+      onAdd(categoryName.trim(), prefix.trim().toUpperCase())
+      setCategoryName('')
+      setPrefix('')
+      onClose()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add category')
+    }
+  }, [categoryName, prefix, onAdd, onClose])
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Category</DialogTitle>
+          <DialogDescription>
+            Create a new category to organize your FFE items.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
@@ -104,11 +135,11 @@ export default function FFEHeader({ isSidebarOpen, onToggleSidebar }: FFEHeaderP
   const currentSchedule = currentProject?.schedules.find(s => s.id === currentScheduleId)
   const categories = currentProjectId ? getCategories(currentProjectId) : []
 
-  const handleAddCategory = (name: string, prefix: string) => {
+  const handleAddCategory = useCallback((name: string, prefix: string) => {
     if (currentProjectId) {
       addCategory(currentProjectId, name, prefix)
     }
-  }
+  }, [currentProjectId, addCategory])
 
   return (
     <>
