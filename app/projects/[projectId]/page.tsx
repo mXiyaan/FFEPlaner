@@ -1,20 +1,34 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { FFESidebar } from '@/components/FFESidebar'
-import { FFEHeader } from '@/components/FFEHeader'
+import FFEHeader from '@/components/FFEHeader'
 import { FFEDashboard } from '@/components/FFEDashboard'
 import { useFFE } from '@/components/FFEContext'
 import AddScheduleDialog from '@/components/AddScheduleDialog'
 import { Button } from '@/components/ui/button'
-import { CalendarPlus } from 'lucide-react'
+import { CalendarPlus, ArrowLeft } from 'lucide-react'
 
 export default function ProjectPage({ params }: { params: { projectId: string } }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false)
-  const { projects, setCurrentProjectId, currentScheduleId, addSchedule } = useFFE()
+  const { projects, setCurrentProjectId, addSchedule } = useFFE()
+  const router = useRouter()
   
   const project = projects.find(p => p.id === params.projectId)
+
+  useEffect(() => {
+    if (params.projectId) {
+      setCurrentProjectId(params.projectId)
+    }
+  }, [params.projectId, setCurrentProjectId])
+
+  useEffect(() => {
+    if (!project) {
+      router.push('/')
+    }
+  }, [project, router])
   
   if (!project) {
     return (
@@ -22,17 +36,20 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Project Not Found</h2>
           <p className="text-muted-foreground">The project you're looking for doesn't exist.</p>
+          <Button variant="outline" className="mt-4" onClick={() => router.push('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Return to Dashboard
+          </Button>
         </div>
       </div>
     )
   }
 
   const handleAddSchedule = (name: string, budget?: number) => {
-    addSchedule(params.projectId, name, budget)
+    const scheduleId = addSchedule(params.projectId, name, budget)
     setIsAddScheduleOpen(false)
+    return scheduleId
   }
-
-  setCurrentProjectId(params.projectId)
 
   return (
     <div className="flex h-screen bg-background">
@@ -47,13 +64,17 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} 
         />
         {project.schedules.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full">
-            <h2 className="text-2xl font-bold mb-4">No Schedules</h2>
-            <p className="text-muted-foreground mb-6">This project doesn't have any schedules yet.</p>
-            <Button onClick={() => setIsAddScheduleOpen(true)}>
-              <CalendarPlus className="mr-2 h-4 w-4" />
-              Create First Schedule
-            </Button>
+          <div className="flex flex-col items-center justify-center h-full bg-accent/5">
+            <div className="text-center max-w-md p-8 rounded-lg bg-background shadow-lg">
+              <h2 className="text-2xl font-bold mb-4">Create Your First Schedule</h2>
+              <p className="text-muted-foreground mb-6">
+                Get started by creating a schedule to organize your furniture, fixtures, and equipment.
+              </p>
+              <Button onClick={() => setIsAddScheduleOpen(true)} size="lg">
+                <CalendarPlus className="mr-2 h-5 w-5" />
+                Create Schedule
+              </Button>
+            </div>
           </div>
         ) : (
           <FFEDashboard />
@@ -63,7 +84,7 @@ export default function ProjectPage({ params }: { params: { projectId: string } 
         isOpen={isAddScheduleOpen}
         onClose={() => setIsAddScheduleOpen(false)}
         onAddSchedule={handleAddSchedule}
-        projectBudgetType="Flexible Budget"
+        projectId={params.projectId}
       />
     </div>
   )

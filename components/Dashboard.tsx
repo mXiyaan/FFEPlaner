@@ -6,24 +6,36 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Search, Menu } from 'lucide-react'
-
-type Project = {
-  id: string
-  name: string
-  budget: number
-  client: {
-    name: string
-  }
-  teamMembers: string[]
-}
+import { useFFE } from './FFEContext'
+import { useRouter } from 'next/navigation'
 
 type DashboardProps = {
-  projects: Project[]
   onToggleSidebar: () => void
 }
 
-export default function Dashboard({ projects, onToggleSidebar }: DashboardProps) {
+export default function Dashboard({ onToggleSidebar }: DashboardProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
+  const { projects, setCurrentProjectId } = useFFE()
+  const router = useRouter()
+
+  const filteredProjects = projects
+    .filter(project => {
+      if (searchTerm) {
+        return project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+               project.clientName?.toLowerCase().includes(searchTerm.toLowerCase())
+      }
+      return true
+    })
+    .filter(project => {
+      if (filterStatus === 'all') return true
+      return true
+    })
+
+  const handleProjectClick = (projectId: string) => {
+    setCurrentProjectId(projectId)
+    router.push(`/projects/${projectId}`)
+  }
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -46,7 +58,7 @@ export default function Dashboard({ projects, onToggleSidebar }: DashboardProps)
               className="pl-8"
             />
           </div>
-          <Select defaultValue="all">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter projects" />
             </SelectTrigger>
@@ -61,28 +73,45 @@ export default function Dashboard({ projects, onToggleSidebar }: DashboardProps)
       </header>
 
       <main className="flex-1 overflow-x-auto p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map(project => (
-            <Card key={project.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <CardTitle>{project.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">${project.budget.toLocaleString()}</p>
-                  <p className="text-sm font-medium">{project.client.name}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {project.teamMembers.map((member, index) => (
-                      <span key={index} className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full">
-                        {member}
-                      </span>
-                    ))}
+        {filteredProjects.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No projects found</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map(project => (
+              <Card 
+                key={project.id} 
+                className="hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => handleProjectClick(project.id)}
+              >
+                <CardHeader>
+                  <CardTitle>{project.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Budget: ${project.totalBudget.toLocaleString()}
+                    </p>
+                    {project.clientName && (
+                      <p className="text-sm font-medium">{project.clientName}</p>
+                    )}
+                    <div className="flex flex-wrap gap-1">
+                      {project.schedules.map((schedule) => (
+                        <span 
+                          key={schedule.id} 
+                          className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded-full"
+                        >
+                          {schedule.name}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )

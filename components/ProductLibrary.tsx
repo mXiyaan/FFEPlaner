@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Plus, Search, Menu, Grid, List } from 'lucide-react'
+import { Search, Menu, Grid, List } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import ProductCard from './ProductCard'
 import ProductListItem from './ProductListItem'
+import AddNewProductDialog from './AddNewProductDialog'
 
 interface ProductLibraryProps {
   isSidebarOpen: boolean
@@ -180,18 +180,7 @@ export default function ProductLibrary({ isSidebarOpen, onToggleSidebar }: Produ
             >
               <Grid className="h-4 w-4" />
             </Button>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" /> Add Product
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle>Add New Product</DialogTitle>
-                </DialogHeader>
-              </DialogContent>
-            </Dialog>
+            <AddNewProductDialog />
           </div>
         </div>
       </header>
